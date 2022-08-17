@@ -127,3 +127,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+*.parquet
+*.pkl
+*.log
+historical_data_all.csv
