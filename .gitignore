@@ -132,3 +132,5 @@ dmypy.json
 *.pkl
 *.log
 historical_data_all.csv
+*.db
+.idea/*
