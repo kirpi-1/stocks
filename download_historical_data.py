@@ -1,0 +1,26 @@
+import logging
+import pandas as pd
+import yfinance as yf
+
+
+logger = logging.getLogger()
+# download historical data
+# pandas will complain about a fragmented dataframe
+file = 'ticker_list.csv'
+tickers = pd.read_csv(file)
+failed_tickers = list()
+df = pd.DataFrame()
+for idx, ticker in enumerate(tickers['Symbol']):
+    msg = f"Working on {ticker}, ({idx+1} of {len(tickers)})"
+    print(msg, end="\r")
+    logger.info(msg)
+    d = yf.Ticker(ticker).history(period="max")
+    if len(d)>0:        
+        df.insert(len(df.columns), ticker, d.Close)
+        df = df.copy()
+    print(" "*80, end="\r")
+
+# save progress
+df.to_csv("historical_data.csv", index=True)
+print("Done")
+logger.info("Done downloading historical data")
