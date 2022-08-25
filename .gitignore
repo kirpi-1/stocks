@@ -137,3 +137,6 @@ historical_data_all.csv
 .idea/*
 plots/*
 data/*
+global*.csv
+sector*.csv
+distributions*.csv
