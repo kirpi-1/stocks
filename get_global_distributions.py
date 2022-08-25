@@ -133,9 +133,10 @@ if end_date is not None:
     end_txt = end_date.strftime("%b-%d-%Y")
 else:
     end_txt = "Present-Day"
-tag = f"{window_size}_{start_txt}_{end_txt}"
-distributions.to_csv(f'distributions_{tag}.csv')
-global_res.to_csv(f'global_scores_{tag}.csv')
-sector_res.to_csv(f'sector_scores_{tag}.csv')
+tag = f"{ticker}_{window_size}_{start_txt}_{end_txt}"
+os.makedirs("distributions", exist_ok=True)
+distributions.to_csv(os.path.join('distributions',f'distributions_{tag}.csv'))
+global_res.to_csv(os.path.join('distributions', f'global_scores_{tag}.csv'))
+sector_res.to_csv(os.path.join('distributions', f'sector_scores_{tag}.csv'))
 logging.info(f"saved scores for {tag}")
 
