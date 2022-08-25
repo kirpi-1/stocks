@@ -18,21 +18,25 @@ logger.setLevel(logging.DEBUG)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--start_date", nargs=3, type=int, default=[1, 1, 2017], help="Day, month, and year as 3 integers. Jan month 1. Example: 11 3 2020 is March 11th, 2020")
+parser.add_argument("--stop_date", nargs=3, type=int, default=None, help="Day, month, and year as 3 integers. Jan month 1. Example: 11 3 2020 is March 11th, 2020")
+
 parser.add_argument("--window_sizes", nargs='*', type=int, default=[5, 10, 20, 60, 120], help="The window sizes for the rolling correlation calculations")
 args = parser.parse_args()
-
-# calculate correlations for each rolling window
-# pick a starting date for rolling correlations
-start_date = datetime.datetime(year=args.start_date[2], month=args.start_date[1],day=args.start_date[0])
-window_sizes = args.window_sizes
 
 # read csv from before and convert the datetime to datetime format for easy selection
 df = pd.read_csv("historical_data.csv",index_col="Date")
 df.index=pd.to_datetime(df.index, format='%Y-%m-%d')
 
-data = df[df.index>start_date]
+# calculate correlations for each rolling window
+# pick a starting date for rolling correlations
+start_date = datetime.datetime(year=args.start_date[2], month=args.start_date[1],day=args.start_date[0])
+data = df[df.index>=start_date]
 
-for window_size in window_sizes:
+if stop_date is not None:
+    stop_date = datetime.datetime(year=args.stop_date[2], month=args.stop_date[1],day=args.stop_date[0])
+    data = df[df.index<start_date]
+    
+for window_size in args.window_sizes:
     msg = f"starting window size {window_size}"
     logger.info(msg)    
     os.makedirs(f'data/{window_size}',exist_ok=True)
