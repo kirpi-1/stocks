@@ -115,7 +115,7 @@ def plot_group(idx, group_size, title, plot_legend=True):
     plt.close()    
 
 idx=0
-title = "Correlation distributions:"
+title = f"Correlation distributions for {data_type}:"
 logger.info(f"Generating plots for {ticker}, window={window_size}, {start} to {stop}")
 group_size = 5
 title = title+" "+start+" to "+stop
