@@ -135,8 +135,5 @@ historical_data.csv
 historical_data_all.csv
 *.db
 .idea/*
-plots/*
-data/*
-global*.csv
-sector*.csv
-distributions*.csv
+close/*
+volume/*
