@@ -36,7 +36,7 @@ parser.add_argument("--no-smoothing", "-s", action='store_true', default=False, 
 parser.add_argument("--smoothing-window", "-w", type=int, default=51, help="Size of the smoothing window. Must be odd")
 parser.add_argument("--smoothing-order", "-r", type=int, default=1, help="The order of the savitzky-golay filter used in smoothing")
 parser.add_argument("--overwrite", "-o", action="store_true", default=False, help="If there are already existing plots, decide whether or not to overwrite them")
-
+parser.add_argument("--error-bars", "-e", action="store_true", default=False, help="If you want error bars (+-1 stdev) for the global line")
 args = parser.parse_args()
 
 overwrite = args.overwrite
@@ -81,6 +81,18 @@ order = results['global_ks'].sort_values(ascending=False)
 out = results.loc[order.index]
 #out = out.drop(ticker)
 
+# get +-1std dev for global distribution
+all_hists = np.zeros([len(dist['bins']), len(df.columns)])
+for idx, column in enumerate(df.columns):
+    n, bins = np.histogram(df[column], bins=np.arange(-1,1.01,.01))
+    n = savgol_filter(n, smoothing_window, smoothing_order)
+    n = n/np.sum(n)  
+    all_hists[:,idx] = n
+
+mean_hist = np.nanmean(all_hists, axis=1)
+std_hist = np.nanstd(all_hists, axis=1)
+err = .95*std_hist#/all_hists.shape[1]
+
 def plot_group(idx, group_size, title, plot_legend=True):
     output_filename = os.path.join(data_type, "plots", "global", ticker, str(window_size), f"{start}_{stop}", f"{idx}_{idx+group_size-1}.png")
     if os.path.exists(output_filename) and not overwrite:
@@ -101,9 +113,15 @@ def plot_group(idx, group_size, title, plot_legend=True):
         n = n/np.sum(n)        
         plt.plot(dist['bins'], n, linewidth=2)    
         legends.append(f"{i}:ks={out.loc[i,'global_ks']}, p={out.loc[i,'global_p']}")
-    plt.yticks(ticks=np.arange(0,1,.2), labels=[])
+    plt.yticks(ticks=np.arange(0,1,.2), labels=[])      
+    
+    # plot confidence interval for global
+    
     legends.append("Global")
     plt.plot(dist['bins'], dist['Global'],color='black',linewidth=5)
+    if args.error_bars:
+        plt.fill_between(dist['bins'], dist['Global']-err, dist['Global']+err, color='grey', alpha=.2)
+
     
     plt.ylim([-.0025, .02])  
     if plot_legend:
