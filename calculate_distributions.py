@@ -56,10 +56,10 @@ if start_date is not None:
 if stop_date is not None:
     df = df[df.index<stop_date]
 
-# remove tickers that have null values
+# remove tickers that have too many null values
 na_idx = np.where(df.isna().sum()>0)[0]
 tmp = df.isna().sum()
-bads = tmp[na_idx]/len(df)>0
+bads = tmp[na_idx]/len(df)>.10
 for bad_ticker in bads.index[bads==True]:   
     df = df.drop(bad_ticker, axis=1)
     
@@ -105,8 +105,9 @@ for sector in sectors:
 #sector_res = pd.DataFrame(columns=['ks','p'], index=df.columns)
 results = pd.DataFrame(columns=['global_ks', 'global_p', 'sector_ks', 'sector_p', 'sector', 'pos_score', 'neg_score'], index=df.columns)
 # for all stocks symbols
-for symbol in df.columns:            
-    n, bins = np.histogram(df[symbol], dist['bins'])
+for symbol in df.columns:
+    data = df[symbol]
+    n, bins = np.histogram(data, dist['bins'])
     if sum(n)==0:
         continue           
     if args.use_smoothing:
@@ -134,18 +135,18 @@ for symbol in df.columns:
     results.loc[symbol, 'sector'] = sector
     
     #calculate positvie corr and negative corr score
-    results.loc[symbol, 'pos_score'] = np.sum(n[bins[:-1]>.5])
-    results.loc[symbol, 'neg_score'] = np.sum(n[bins[:-1]<-.5])
+    results.loc[symbol, 'pos_score'] = np.sum(data[data>.5])
+    results.loc[symbol, 'neg_score'] = np.sum(data[data<-.5])
 
 # calculate the highly positively and negatively correlated stonks
 # normalize by number of days in the period
 
-positives = df[df>.75].sum().sort_values(ascending=False)
-negatives = df[df<-.75].sum().sort_values(ascending=True)
-positives = positives.to_frame().reset_index()
-positives.columns=['symbol', 'sum']
-negatives = negatives.to_frame().reset_index()
-negatives.columns=['symbol', 'sum']
+#positives = df[df>.75].sum().sort_values(ascending=False)
+#negatives = df[df<-.75].sum().sort_values(ascending=True)
+#positives = positives.to_frame().reset_index()
+#positives.columns=['symbol', 'sum']
+#negatives = negatives.to_frame().reset_index()
+#negatives.columns=['symbol', 'sum']
 
 # save the output
 tmp = dist.copy()

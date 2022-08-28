@@ -25,7 +25,7 @@ ticker = args.ticker
 data_type = args.datatype
 window_size = args.window
 
-for increment in [12, 6, 3]:
+for increment in [12]:#, 6, 3]:
     start_date = datetime(year=2018, month=1, day=1)    
     while start_date.year<=2022:
         year = start_date.year

@@ -27,6 +27,7 @@ args = parser.parse_args(argv[1:4])
 input_folder = os.path.join(args.datatype,'distributions')
 
 files = os.listdir(input_folder)
+files = [f for f in files if 'distributions' in f]
 for c in [args.ticker, args.datatype, args.window]:
     if c is not None:    
         files = [f for f in files if str(c) in f]

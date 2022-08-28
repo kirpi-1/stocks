@@ -108,6 +108,8 @@ def plot_group(idx, group_size, title, plot_legend=True):
     plt.ylim([-.0025, .02])  
     if plot_legend:
         plt.legend(legends,prop={'size': 14})    
+    plt.xlabel("Correlation (r)", fontsize=20)
+    plt.ylabel("Weight", fontsize=20)
 
     plt.title(title, fontsize=20)
     os.makedirs(os.path.dirname(output_filename), exist_ok=True)
