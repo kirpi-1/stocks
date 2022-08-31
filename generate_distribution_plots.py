@@ -37,6 +37,7 @@ parser.add_argument("--smoothing-window", "-w", type=int, default=51, help="Size
 parser.add_argument("--smoothing-order", "-r", type=int, default=1, help="The order of the savitzky-golay filter used in smoothing")
 parser.add_argument("--overwrite", "-o", action="store_true", default=False, help="If there are already existing plots, decide whether or not to overwrite them")
 parser.add_argument("--error-bars", "-e", action="store_true", default=False, help="If you want error bars (+-1 stdev) for the global line")
+parser.add_argument("--only-top", '-t', action="store_true", default=False, help="Plot only top 50/100")
 args = parser.parse_args()
 
 overwrite = args.overwrite
@@ -82,18 +83,28 @@ out = results.loc[order.index]
 #out = out.drop(ticker)
 
 # get +-1std dev for global distribution
+# also drop tickers that have no data for this time period
 all_hists = np.zeros([len(dist['bins']), len(df.columns)])
 for idx, column in enumerate(df.columns):
+    if np.sum(pd.notna(df[column]))==0:
+        df = df.drop(column, axis=1)
+        continue
     n, bins = np.histogram(df[column], bins=np.arange(-1,1.01,.01))
     n = savgol_filter(n, smoothing_window, smoothing_order)
-    n = n/np.sum(n)  
+    n = n/np.nansum(n)  
     all_hists[:,idx] = n
 
 mean_hist = np.nanmean(all_hists, axis=1)
 std_hist = np.nanstd(all_hists, axis=1)
 err = .95*std_hist#/all_hists.shape[1]
 
-def plot_group(idx, group_size, title, plot_legend=True):
+sectors = ['Basic Materials', 'Communication Services',	'Consumer Cyclical',
+            'Consumer Defensive', 'Energy', 'Financial Services',
+            'Healthcare', 'Industrials', 'Technology', 'Utilities']
+
+sector_colors = ['blue', 'green', 'red', 'purple', 'orangered', 'yellow', 'pink', 'teal', 'brown', 'chartreuse']
+
+def plot_group(idx, group_size, title, plot_legend=True, use_sector_coloring=False):
     output_filename = os.path.join(data_type, "plots", "global", ticker, str(window_size), f"{start}_{stop}", f"{idx}_{idx+group_size-1}.png")
     if os.path.exists(output_filename) and not overwrite:
         logger.warning(f"File exists for {output_filename} with overwrite=False, skipping...")
@@ -106,13 +117,22 @@ def plot_group(idx, group_size, title, plot_legend=True):
     else:
         ticker_list = list(out.index[idx:idx+group_size])    
 
-    for i in ticker_list:        
+    for i in ticker_list:                
         n,_ = np.histogram(df[i], bins=np.arange(-1,1.01,.01))
         if smoothing:
             n = savgol_filter(n, smoothing_window, smoothing_order)
-        n = n/np.sum(n)        
-        plt.plot(dist['bins'], n, linewidth=2)    
+        n = n/np.nansum(n)
+        sector = results.at[i, 'sector']        
+        if use_sector_coloring:
+            if pd.notna(sector):
+                color = sector_colors[sectors.index(sector)]
+            else:
+                color = 'grey'
+            plt.plot(dist['bins'], n, linewidth=2, color=color)    
+        else:
+            plt.plot(dist['bins'], n, linewidth=2)    
         legends.append(f"{i}:ks={out.loc[i,'global_ks']}, p={out.loc[i,'global_p']}")
+        
     plt.yticks(ticks=np.arange(0,1,.2), labels=[])      
     
     # plot confidence interval for global
@@ -124,8 +144,14 @@ def plot_group(idx, group_size, title, plot_legend=True):
 
     
     plt.ylim([-.0025, .02])  
-    if plot_legend:
-        plt.legend(legends,prop={'size': 14})    
+    if use_sector_coloring:
+        plt.legend(legends,prop={'size': 14})
+        lg = plt.legend(sectors, prop={'size': 18})
+        for i, s in enumerate(sectors):
+            lg.legendHandles[i].set_color(sector_colors[i])            
+    elif plot_legend:
+        plt.legend(legends,prop={'size': 14})
+            
     plt.xlabel("Correlation (r)", fontsize=20)
     plt.ylabel("Weight", fontsize=20)
 
@@ -139,17 +165,19 @@ title = f"Correlation distributions for {data_type}:"
 logger.info(f"Generating plots for {ticker}, window={window_size}, {start} to {stop}")
 group_size = 5
 title = title+" "+start+" to "+stop
-while idx<len(out):   
-    msg = f"{idx} of {len(out)}"
-    print(msg, end='\r' )
-    if idx%100==0:
-        logger.debug(msg)
-    plot_group(idx, group_size, title=title, plot_legend=True)
-    idx+=group_size    
-    print(" "*80, end='\r')
+if args.only_top == False:
+    while idx<len(out):   
+        msg = f"{idx} of {len(out)}"
+        print(msg, end='\r' )
+        if idx%100==0:
+            logger.debug(msg)
+        plot_group(idx, group_size, title=title, plot_legend=True)
+        idx+=group_size    
+        print(" "*80, end='\r')
 
 # plot top 50 and top 100 
-plot_group(0, 50, title=title+": Top 50", plot_legend=False)
-plot_group(0, 100, title=title+": Top 100", plot_legend=False)
+plot_group(0, 50, title=title+": Top 50", plot_legend=False, use_sector_coloring=True)
+plot_group(0, 100, title=title+": Top 100", plot_legend=False, use_sector_coloring=True)
+plot_group(0, 500, title=title+": Top 100", plot_legend=False, use_sector_coloring=True)
 logger.info("Completed generating plots")
     
